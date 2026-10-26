@@ -1,0 +1,44 @@
+---
+- name: Automatizacion de Topologia VLANs en Switches Cisco
+  hosts: switches_cisco
+  gather_facts: false
+
+  vars_files:
+    - "{{ playbook_dir }}/../variables/sucursal_01.yml"
+
+  tasks:
+    - name: 1. Crear las VLANs 10, 20 y 99
+      cisco.ios.ios_vlans:
+        config:
+          - name: "{{ item.nombre }}"
+            vlan_id: "{{ item.id }}"
+        state: merged
+      loop: "{{ vlans }}"
+
+    - name: 2. Configurar Puertos de Acceso en Switch Central
+      cisco.ios.ios_l2_interfaces:
+        config:
+          - name: "{{ item.interfaz }}"
+            mode: access
+            access:
+              vlan: "{{ item.vlan }}"
+        state: merged
+      loop: "{{ puertos_acceso_central }}"
+      when: inventory_hostname == "SW_CENTRAL"
+
+    - name: 3. Configurar Enlaces Troncales
+      cisco.ios.ios_l2_interfaces:
+        config:
+          - name: "{{ item.interfaz }}"
+            mode: trunk
+            trunk:
+              encapsulation: dot1q
+              native_vlan: "{{ item.vlan_nativa }}"
+              allowed_vlans: "{{ item.vlans_permitidas }}"
+        state: merged
+      loop: "{{ enlaces_troncales }}"
+      when: inventory_hostname == "SW_CENTRAL"
+
+    - name: 4. Guardar configuraciones en NVRAM
+      cisco.ios.ios_config:
+        save_when: always
