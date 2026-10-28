@@ -1,31 +1,41 @@
----
 vlans:
-  - id: 10
-    nombre: "AZUL_VLAN10"
-  - id: 20
-    nombre: "AMARILLA_VLAN20"
-  - id: 99
-    nombre: "ROSA_VLAN99_NATIVA"
+  - vlan_id: 10
+    name: "USUARIOS_VLAN10"
+  - vlan_id: 20
+    name: "USUARIOS_VLAN20"
+  - vlan_id: 99
+    name: "GESTION"
 
-puertos_acceso_central:
-  - interfaz: "GigabitEthernet0/1"
-    vlan: 10
-    descripcion: "PC1 - VLAN 10"
-  - interfaz: "GigabitEthernet0/2"
-    vlan: 10
-    descripcion: "PC2 - VLAN 10"
-  - interfaz: "GigabitEthernet1/0"
-    vlan: 20
-    descripcion: "PC3 - VLAN 20"
-  - interfaz: "GigabitEthernet1/1"
-    vlan: 20
-    descripcion: "PC4 - VLAN 20"
-  - interfaz: "GigabitEthernet0/3"
-    vlan: 99
-    descripcion: "PC7 - VLAN 99"
+sw_core_interfaces:
+  troncales:
+    - interface: GigabitEthernet0/0
+      native_vlan: 99
+      allowed_vlans: "10,20,99"
+    - interface: GigabitEthernet1/2
+      native_vlan: 99
+      allowed_vlans: "10,20,99"
+  acceso:
+    - interface: GigabitEthernet0/1
+      vlan: 10
+    - interface: GigabitEthernet0/2
+      vlan: 10
+    - interface: GigabitEthernet1/0
+      vlan: 20
+    - interface: GigabitEthernet1/1
+      vlan: 20
+    - interface: GigabitEthernet0/3
+      vlan: 99
 
-enlaces_troncales:
-  - interfaz: "GigabitEthernet1/2"
-    vlan_nativa: 99
-    vlans_permitidas: "10,20,99"
-    descripcion: "Troncal a Switch2"
+sw_acc1_interfaces:
+  troncales:
+    - interface: GigabitEthernet0/0
+      native_vlan: 99
+      allowed_vlans: "10,20,99"
+  acceso:
+    - interface: GigabitEthernet0/1
+      vlan: 10
+    - interface: GigabitEthernet0/2
+      vlan: 20
+    - interface: GigabitEthernet0/3
+      vlan: 99
+
