@@ -1,41 +1,65 @@
+---
+red:
+  gateway_gestion: 192.168.99.1
+
 vlans:
   - vlan_id: 10
-    name: "USUARIOS_VLAN10"
+    name: USUARIOS_VLAN10
   - vlan_id: 20
-    name: "USUARIOS_VLAN20"
+    name: USUARIOS_VLAN20
   - vlan_id: 99
-    name: "GESTION"
+    name: GESTION
 
-sw_core_interfaces:
-  troncales:
-    - interface: GigabitEthernet0/0
-      native_vlan: 99
-      allowed_vlans: "10,20,99"
-    - interface: GigabitEthernet1/2
-      native_vlan: 99
-      allowed_vlans: "10,20,99"
-  acceso:
-    - interface: GigabitEthernet0/1
-      vlan: 10
-    - interface: GigabitEthernet0/2
-      vlan: 10
-    - interface: GigabitEthernet1/0
-      vlan: 20
-    - interface: GigabitEthernet1/1
-      vlan: 20
-    - interface: GigabitEthernet0/3
-      vlan: 99
+dispositivos:
+  SW-SUC-01-CORE:
+    tipo: switch
+    troncales:
+      - interface: GigabitEthernet0/0
+        description: "TRONCAL HACIA R-SUC-01"
+        native_vlan: 99
+        allowed_vlans: "10,20,99"
+      - interface: GigabitEthernet1/2
+        description: "TRONCAL HACIA SW-SUC-01-ACC1"
+        native_vlan: 99
+        allowed_vlans: "10,20,99"
+    acceso:
+      - { interface: GigabitEthernet0/1, vlan: 10, description: "PC1 - VLAN 10" }
+      - { interface: GigabitEthernet0/2, vlan: 10, description: "PC2 - VLAN 10" }
+      - { interface: GigabitEthernet1/0, vlan: 20, description: "PC3 - VLAN 20" }
+      - { interface: GigabitEthernet1/1, vlan: 20, description: "PC4 - VLAN 20" }
+      - { interface: GigabitEthernet0/3, vlan: 99, description: "PC7 - VLAN 99" }
 
-sw_acc1_interfaces:
-  troncales:
-    - interface: GigabitEthernet0/0
-      native_vlan: 99
-      allowed_vlans: "10,20,99"
-  acceso:
-    - interface: GigabitEthernet0/1
-      vlan: 10
-    - interface: GigabitEthernet0/2
-      vlan: 20
-    - interface: GigabitEthernet0/3
-      vlan: 99
+  SW-SUC-01-ACC1:
+    tipo: switch
+    troncales:
+      - interface: GigabitEthernet0/0
+        description: "TRONCAL HACIA SW-SUC-01-CORE"
+        native_vlan: 99
+        allowed_vlans: "10,20,99"
+    acceso:
+      - { interface: GigabitEthernet0/1, vlan: 10, description: "PC5 - VLAN 10" }
+      - { interface: GigabitEthernet0/2, vlan: 20, description: "PC6 - VLAN 20" }
+      - { interface: GigabitEthernet0/3, vlan: 99, description: "PC8 - VLAN 99" }
 
+  R-SUC-01:
+    tipo: router
+    interfaz_fisica:
+      interface: GigabitEthernet0/0
+      description: "TRONCAL HACIA SW-SUC-01-CORE"
+    subinterfaces:
+      - interface: GigabitEthernet0/0.10
+        vlan: 10
+        description: "GATEWAY USUARIOS_VLAN10"
+        ip: 192.168.10.1
+        mask: 255.255.255.0
+      - interface: GigabitEthernet0/0.20
+        vlan: 20
+        description: "GATEWAY USUARIOS_VLAN20"
+        ip: 192.168.20.1
+        mask: 255.255.255.0
+      - interface: GigabitEthernet0/0.99
+        vlan: 99
+        native: true
+        description: "GATEWAY GESTION"
+        ip: 192.168.99.1
+        mask: 255.255.255.0

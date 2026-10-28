@@ -1,79 +1,145 @@
 ---
-- name: Aprovisionamiento y Respaldos de la Sucursal 01
+- name: Aprovisionamiento y Respaldos de Switches - Sucursal 01
   hosts: switches_cisco
-  gather_facts: no
+  gather_facts: false
   vars_files:
-    - ../variables/sucursal_01.yml
+    - "{{ playbook_dir }}/../variables/sucursal_01.yml"
+  vars:
+    dispositivo: "{{ dispositivos[inventory_hostname] }}"
 
   tasks:
-    - name: 1. Crear carpetas de respaldos locales
-      delegate_to: localhost
-      file:
-        path: "../respaldos"
+    - name: 1. Crear carpeta de respaldos local
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../respaldos"
         state: directory
+      delegate_to: localhost
+      tags: [respaldo]
 
-    - name: 2. Configurar Nombres de VLANs
+    - name: 2. Configurar VLANs
       cisco.ios.ios_vlans:
         config:
-          - name: "{{ item.name }}"
-            vlan_id: "{{ item.vlan_id }}"
+          - vlan_id: "{{ item.vlan_id }}"
+            name: "{{ item.name }}"
         state: merged
       loop: "{{ vlans }}"
+      loop_control:
+        label: "VLAN {{ item.vlan_id }}"
 
-    - name: 3. Configurar Puertos Troncales en SW-SUC-01-CORE
+    - name: 3. Descripcion y estado de interfaces (troncales y acceso)
+      cisco.ios.ios_interfaces:
+        config:
+          - name: "{{ item.interface }}"
+            description: "{{ item.description }}"
+            enabled: true
+        state: merged
+      loop: "{{ dispositivo.troncales + dispositivo.acceso }}"
+      loop_control:
+        label: "{{ item.interface }}"
+
+    - name: 4. Configurar enlaces troncales 802.1Q
       cisco.ios.ios_l2_interfaces:
         config:
           - name: "{{ item.interface }}"
             mode: trunk
             trunk:
+              encapsulation: dot1q
               native_vlan: "{{ item.native_vlan }}"
               allowed_vlans: "{{ item.allowed_vlans }}"
-      loop: "{{ sw_core_interfaces.troncales }}"
-      when: inventory_hostname == "SW-SUC-01-CORE"
+        state: merged
+      loop: "{{ dispositivo.troncales }}"
+      loop_control:
+        label: "{{ item.interface }}"
 
-    - name: 4. Configurar Puertos Troncales en SW-SUC-01-ACC1
-      cisco.ios.ios_l2_interfaces:
-        config:
-          - name: "{{ item.interface }}"
-            mode: trunk
-            trunk:
-              native_vlan: "{{ item.native_vlan }}"
-              allowed_vlans: "{{ item.allowed_vlans }}"
-      loop: "{{ sw_acc1_interfaces.troncales }}"
-      when: inventory_hostname == "SW-SUC-01-ACC1"
-
-    - name: 5. Configurar Puertos de Acceso en SW-SUC-01-CORE
+    - name: 5. Configurar puertos de acceso
       cisco.ios.ios_l2_interfaces:
         config:
           - name: "{{ item.interface }}"
             mode: access
             access:
               vlan: "{{ item.vlan }}"
-      loop: "{{ sw_core_interfaces.acceso }}"
-      when: inventory_hostname == "SW-SUC-01-CORE"
+        state: merged
+      loop: "{{ dispositivo.acceso }}"
+      loop_control:
+        label: "{{ item.interface }}"
 
-    - name: 6. Configurar Puertos de Acceso en SW-SUC-01-ACC1
-      cisco.ios.ios_l2_interfaces:
-        config:
-          - name: "{{ item.interface }}"
-            mode: access
-            access:
-              vlan: "{{ item.vlan }}"
-      loop: "{{ sw_acc1_interfaces.acceso }}"
-      when: inventory_hostname == "SW-SUC-01-ACC1"
+    - name: 6. Gateway por defecto de gestion
+      cisco.ios.ios_config:
+        lines:
+          - "ip default-gateway {{ red.gateway_gestion }}"
 
-    - name: 7. Guardar configuracion en NVRAM (write memory)
+    - name: 7. Guardar configuracion en NVRAM
       cisco.ios.ios_config:
         save_when: modified
 
-    - name: 8. Extraer Running Configuration
+    - name: 8. Extraer running-config y estado de VLAN
       cisco.ios.ios_command:
         commands:
           - show running-config
-      register: config_evidencia
+          - show vlan brief
+      register: salida
+      tags: [respaldo]
 
-    - name: 9. Guardar respaldo local en el servidor
+    - name: 9. Guardar respaldos en el servidor
+      ansible.builtin.copy:
+        content: "{{ item.contenido }}\n"
+        dest: "{{ playbook_dir }}/../respaldos/{{ inventory_hostname }}_{{ item.nombre }}.txt"
       delegate_to: localhost
-      copy:
-        content: "{{ config_evidencia.stdout[0] }}"
-        dest: "../respaldos/{{ inventory_hostname }}_running_config.txt"
+      loop:
+        - { nombre: running_config, contenido: "{{ salida.stdout[0] }}" }
+        - { nombre: vlan_brief, contenido: "{{ salida.stdout[1] }}" }
+      loop_control:
+        label: "{{ item.nombre }}"
+      tags: [respaldo]
+
+- name: Aprovisionamiento y Respaldo del Router - Sucursal 01
+  hosts: routers_cisco
+  gather_facts: false
+  vars_files:
+    - "{{ playbook_dir }}/../variables/sucursal_01.yml"
+  vars:
+    dispositivo: "{{ dispositivos[inventory_hostname] }}"
+
+  tasks:
+    - name: 1. Crear carpeta de respaldos local
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../respaldos"
+        state: directory
+      delegate_to: localhost
+      tags: [respaldo]
+
+    - name: 2. Interfaz fisica hacia el CORE
+      cisco.ios.ios_interfaces:
+        config:
+          - name: "{{ dispositivo.interfaz_fisica.interface }}"
+            description: "{{ dispositivo.interfaz_fisica.description }}"
+            enabled: true
+        state: merged
+
+    - name: 3. Subinterfaces para enrutamiento inter-VLAN
+      cisco.ios.ios_config:
+        parents: "interface {{ item.interface }}"
+        lines:
+          - "description {{ item.description }}"
+          - "encapsulation dot1Q {{ item.vlan }}{{ ' native' if item.native | default(false) else '' }}"
+          - "ip address {{ item.ip }} {{ item.mask }}"
+      loop: "{{ dispositivo.subinterfaces }}"
+      loop_control:
+        label: "{{ item.interface }}"
+
+    - name: 4. Guardar configuracion en NVRAM
+      cisco.ios.ios_config:
+        save_when: modified
+
+    - name: 5. Extraer running-config del router
+      cisco.ios.ios_command:
+        commands:
+          - show running-config
+      register: salida
+      tags: [respaldo]
+
+    - name: 6. Guardar respaldo en el servidor
+      ansible.builtin.copy:
+        content: "{{ salida.stdout[0] }}\n"
+        dest: "{{ playbook_dir }}/../respaldos/{{ inventory_hostname }}_running_config.txt"
+      delegate_to: localhost
+      tags: [respaldo]
