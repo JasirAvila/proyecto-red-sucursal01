@@ -1,0 +1,16 @@
+---
+- name: Recolectar diagnostico de la flota de equipos
+  hosts: cisco
+  gather_facts: false
+  tasks:
+    - name: Comandos show version e ip interface brief
+      cisco.ios.ios_command:
+        commands:
+          - show version
+          - show ip interface brief
+      register: salidas
+    - name: Guardar evidencias en evidencias/flota/
+      ansible.builtin.copy:
+        content: "{{ salidas.stdout[0] }}\n---SECCION---\n{{ salidas.stdout[1] }}"
+        dest: "{{ playbook_dir }}/../evidencias/flota/{{ inventory_hostname }}_diag.txt"
+      delegate_to: localhost

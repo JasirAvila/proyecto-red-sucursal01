@@ -1,0 +1,13 @@
+---
+sede: "Sucursal 02"
+bloque_disponible: "10.20.0.0/23"
+redes_requeridas:
+  - vlan_id: 10
+    nombre: "ADMINISTRACION"
+    hosts_requeridos: 50
+  - vlan_id: 20
+    nombre: "OPERACION"
+    hosts_requeridos: 25
+  - vlan_id: 99
+    nombre: "GESTION"
+    hosts_requeridos: 10

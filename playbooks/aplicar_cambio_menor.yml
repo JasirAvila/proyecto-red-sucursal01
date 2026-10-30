@@ -1,0 +1,11 @@
+---
+- name: Aplicar cambio documentado no disruptivo
+  hosts: SW-SUC-01-CORE
+  gather_facts: false
+  tasks:
+    - name: Actualizar descripcion de puerto de acceso Gi0/1
+      cisco.ios.ios_interfaces:
+        config:
+          - name: GigabitEthernet0/1
+            description: "PC1 - ESTACION OPERACIONES SUC01"
+        state: merged

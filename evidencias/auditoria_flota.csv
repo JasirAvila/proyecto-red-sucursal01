@@ -1,0 +1,7 @@
+Equipo,Condicion_Evaluada,Resultado,Evidencia_Usada,Detalle
+R-SUC-01,Version del Sistema Operativo,CUMPLE,IOS 15.9(3)M8,Conforme a estandar corporativo
+R-SUC-01,Interfaces activas (Status UP),CUMPLE,6 interfaces UP,Conectividad fisica y logica activa
+SW-SUC-01-CORE,Version del Sistema Operativo,CUMPLE,IOS 15.2(20200924,Conforme a estandar corporativo
+SW-SUC-01-CORE,Interfaces activas (Status UP),CUMPLE,1 interfaces UP,Conectividad fisica y logica activa
+SW-SUC-01-ACC1,Version del Sistema Operativo,CUMPLE,IOS 15.2(20200924,Conforme a estandar corporativo
+SW-SUC-01-ACC1,Interfaces activas (Status UP),CUMPLE,1 interfaces UP,Conectividad fisica y logica activa

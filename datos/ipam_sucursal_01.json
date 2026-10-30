@@ -1,0 +1,14 @@
+{
+  "plataforma": "IPAM_Corporativo_Infoblox",
+  "dispositivos": [
+    { "nombre": "SW-SUC-01-CORE", "rol": "switch", "ip_gestion": "192.168.99.2" },
+    { "nombre": "SW-SUC-01-ACC1", "rol": "switch", "ip_gestion": "192.168.99.3" },
+    { "nombre": "R-SUC-01", "rol": "router", "ip_gestion": "192.168.99.1" }
+  ],
+  "subredes": [
+    { "vlan_id": 10, "nombre": "USUARIOS_VLAN10", "red": "192.168.10.0/24", "gateway": "192.168.10.1" },
+    { "vlan_id": 20, "nombre": "USUARIOS_VLAN20", "red": "192.168.20.0/24", "gateway": "192.168.20.1" },
+    { "vlan_id": 99, "nombre": "GESTION", "red": "192.168.99.0/24", "gateway": "192.168.99.1" },
+    { "vlan_id": 50, "nombre": "DMZ_NO_DECLARADA", "red": "172.16.50.0/24", "gateway": "172.16.50.1" }
+  ]
+}

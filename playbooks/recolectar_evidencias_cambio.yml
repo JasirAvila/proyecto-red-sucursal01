@@ -1,0 +1,37 @@
+---
+- name: Recoleccion de estado de red (Pre y Post Cambio)
+  hosts: cisco
+  gather_facts: false
+  vars:
+    fase: "antes"  # Se sobreescribe con -e "fase=despues"
+  tasks:
+    - name: Consultar estado en switches
+      cisco.ios.ios_command:
+        commands:
+          - show vlan brief
+          - show interfaces trunk
+          - show ip interface brief
+      register: salidas_sw
+      when: "'switches_cisco' in group_names"
+
+    - name: Consultar estado en router
+      cisco.ios.ios_command:
+        commands:
+          - show ip interface brief
+          - show ip route
+      register: salidas_rt
+      when: "'routers_cisco' in group_names"
+
+    - name: Guardar evidencias de switches
+      ansible.builtin.copy:
+        content: "{{ salidas_sw.stdout[0] }}\n---SECCION---\n{{ salidas_sw.stdout[1] }}\n---SECCION---\n{{ salidas_sw.stdout[2] }}"
+        dest: "{{ playbook_dir }}/../evidencias/{{ fase }}_cambio/{{ inventory_hostname }}_estado.txt"
+      delegate_to: localhost
+      when: "'switches_cisco' in group_names"
+
+    - name: Guardar evidencias del router
+      ansible.builtin.copy:
+        content: "{{ salidas_rt.stdout[0] }}\n---SECCION---\n{{ salidas_rt.stdout[1] }}"
+        dest: "{{ playbook_dir }}/../evidencias/{{ fase }}_cambio/{{ inventory_hostname }}_estado.txt"
+      delegate_to: localhost
+      when: "'routers_cisco' in group_names"
